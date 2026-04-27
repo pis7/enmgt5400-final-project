@@ -15,13 +15,20 @@ Build directory used for corpus:
 
 ```
 src/asic_rag/
-  config.py               # Shared constants
-  corpus.py               # Assembles corpus.jsonl from mflowgen build dir
+  config.py               # Shared constants (models, dimensions, paths)
+  corpus.py               # Assembles corpus.jsonl from pyhflow build dir
   chunker.py              # Fixed-size chunking (baseline)
   chunker_structured.py   # Structure-aware chunking (experiment)
   ingest.py               # Embed chunks + store in ChromaDB
   query.py                # RAG query CLI (retrieve + generate)
   eval.py                 # Benchmark evaluation
+docs/
+  report.tex              # Final project report (IEEE format)
+  findings.md             # Detailed evaluation findings and analysis
+  results.md              # Evaluation results tables (for demo)
+  demo.md                 # In-class demo script
+  proposal.tex            # Original project proposal
+  pipeline.png            # Pipeline diagram
 benchmark.jsonl           # 30 eval questions with ground truth
 ```
 
@@ -44,7 +51,7 @@ uv run eval -o results.json                # evaluate
 
 ## CLI entry points
 
-- `corpus` — assemble corpus from mflowgen build directory
+- `corpus` — assemble corpus from pyhflow build directory
 - `ingest` — chunk, embed, and store in ChromaDB (`--chunker fixed|structured`)
 - `query` — ask questions (`--filter-variant`, `--rerank`, `--retrieve-only`, `-i`)
 - `eval` — run benchmark (`--filter-variant`, `--rerank`, `--retrieval-only`)

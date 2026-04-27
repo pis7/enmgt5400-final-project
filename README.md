@@ -6,7 +6,7 @@ final project at Cornell.
 
 ## Overview
 
-The system ingests design artifacts from an mflowgen ASIC build (RTL, synthesis
+The system ingests design artifacts from a custom ASIC build (RTL, synthesis
 reports, timing analysis, power reports, DRC logs) and answers natural language
 questions about the design by retrieving relevant context and generating
 grounded answers with source citations.
@@ -36,20 +36,20 @@ store, eval results) go into the current working directory.
 ```bash
 mkdir build && cd build
 
-# 1. Assemble corpus from mflowgen build directory
-uv run corpus /path/to/mflowgen/build-dir
+# 1. Assemble corpus from pyhflow build directory
+uv run corpus /path/to/pyhflow/build-dir
 
 # 2. Ingest (chunk + embed + store)
-uv run ingest                         # fixed-size chunking (baseline)
-uv run ingest --chunker structured    # structure-aware chunking
+uv run ingest                      # fixed-size chunking (baseline)
+uv run ingest --chunker structured # structure-aware chunking
 
 # 3. Query
 uv run query "What is the setup slack for BlimpV11_2fe_2be?"
-uv run query -i                       # interactive mode
-uv run query --retrieve-only "DRC violations"      # debug retrieval
-uv run query --filter-variant "..."                 # auto-filter by variant
-uv run query --rerank "..."                         # re-rank with Claude
-uv run query --filter-variant --rerank "..."        # both
+uv run query -i                               # interactive mode
+uv run query --retrieve-only "DRC violations" # debug retrieval
+uv run query --filter-variant "..."           # auto-filter by variant
+uv run query --rerank "..."                   # re-rank with Claude
+uv run query --filter-variant --rerank "..."  # both
 
 # 4. Evaluate against benchmark (copy benchmark.jsonl into build dir first)
 cp ../benchmark.jsonl .
@@ -74,14 +74,20 @@ strategies, re-run `ingest` with the desired `--chunker` flag.
 ```
 src/asic_rag/
   config.py               # Shared constants (models, chunk params, paths)
-  corpus.py               # Corpus assembly from mflowgen build directory
+  corpus.py               # Corpus assembly from pyhflow build directory
   chunker.py              # Fixed-size character chunking (baseline)
   chunker_structured.py   # Structure-aware chunking (experiment)
   ingest.py               # Embedding + ChromaDB storage
   query.py                # Retrieval + generation CLI
   eval.py                 # Benchmark evaluation framework
+docs/
+  report.tex              # Final project report (IEEE format)
+  findings.md             # Detailed evaluation findings and analysis
+  results.md              # Evaluation results tables (for demo)
+  demo.md                 # In-class demo script
+  proposal.tex            # Original project proposal
+  pipeline.png            # Pipeline diagram
 benchmark.jsonl           # 30 evaluation questions with ground-truth answers
-proposal.tex              # Project proposal
 ```
 
 Build directory (generated):
@@ -98,8 +104,10 @@ Five configurations compared on 30 benchmark questions:
 
 | Strategy | Retrieval Recall | Correctness (/3) | Completeness (/3) |
 |---|---|---|---|
-| Fixed-size (baseline) | 0.38 | 1.40 | 1.80 |
-| Structured v1 | 0.35 | 1.77 | 2.17 |
-| Structured v2 (split headers) | 0.48 | 2.13 | 2.37 |
-| Struct v2 + variant filter | 0.57 | 2.03 | 2.23 |
-| Struct v2 + filter + rerank | 0.57 | 2.13 | 2.37 |
+| No context (LLM only) | n/a | 0.50 | 0.57 |
+| Fixed-size (baseline) | 0.37 | 1.60 | 1.87 |
+| Structured chunking | 0.57 | 2.13 | 2.30 |
+| Structured + variant filter | 0.63 | 2.00 | 2.20 |
+| Structured + filter + rerank | 0.63 | 2.07 | 2.27 |
+
+Best configuration achieves **4.3x improvement** in correctness over the LLM alone.
