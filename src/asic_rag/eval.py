@@ -169,8 +169,8 @@ class EvalExecutor:
                 self.results.append(entry)
                 continue
 
-            variant = qe.extract_variant(item["question"]) if self.use_variant_filter else None
-            retrieval_results = qe.retrieve(item["question"], variant_filter=variant)
+            variants = qe.extract_variants(item["question"]) if self.use_variant_filter else []
+            retrieval_results = qe.retrieve(item["question"], variant_filter=variants or None)
 
             if self.use_rerank:
                 retrieval_results = qe.rerank(item["question"], retrieval_results)

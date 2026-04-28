@@ -61,14 +61,16 @@ class QueryExecutor:
         chroma_client = chromadb.PersistentClient(path=str(VECTORSTORE_DIR))
         self.collection = chroma_client.get_collection("asic_debug")
 
-    def extract_variant(self, question: str) -> str | None:
-        """Extract a design variant name from the question, if mentioned."""
+    def extract_variants(self, question: str) -> list[str]:
+        """Extract all design variant names mentioned in the question."""
+        found = []
+        q_lower = question.lower()
         for variant in KNOWN_VARIANTS:
-            if variant.lower() in question.lower():
-                return variant
-        return None
+            if variant.lower() in q_lower:
+                found.append(variant)
+        return found
 
-    def retrieve(self, question: str, top_k: int | None = None, variant_filter: str | None = None) -> dict:
+    def retrieve(self, question: str, top_k: int | None = None, variant_filter: list[str] | None = None) -> dict:
         """Embed the question and retrieve top-k chunks from ChromaDB."""
         if top_k is None:
             top_k = self.top_k
@@ -82,10 +84,9 @@ class QueryExecutor:
 
         where = None
         if variant_filter:
-            where = {"$or": [
-                {"design_variant": variant_filter},
-                {"design_variant": "all"},
-            ]}
+            # Match any mentioned variant OR "all" (cross-variant reports)
+            where = {"$or": [{"design_variant": v} for v in variant_filter]
+                     + [{"design_variant": "all"}]}
 
         return self.collection.query(
             query_embeddings=[query_embedding],
@@ -179,8 +180,8 @@ class QueryExecutor:
 
     def ask(self, question: str) -> None:
         """Run the full retrieve-and-answer pipeline for a single question."""
-        variant = self.extract_variant(question) if self.filter_variant else None
-        results = self.retrieve(question, variant_filter=variant)
+        variants = self.extract_variants(question) if self.filter_variant else []
+        results = self.retrieve(question, variant_filter=variants or None)
 
         if self.use_rerank:
             results = self.rerank(question, results)
@@ -188,8 +189,8 @@ class QueryExecutor:
         context = self.format_context(results)
 
         if self.retrieve_only:
-            if variant:
-                print(f"[Filtered to variant: {variant}]\n")
+            if variants:
+                print(f"[Filtered to variants: {', '.join(variants)}]\n")
             print(context)
             return
 

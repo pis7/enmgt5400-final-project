@@ -104,10 +104,10 @@ Five configurations compared on 30 benchmark questions:
 
 | Strategy | Retrieval Recall | Correctness (/3) | Completeness (/3) |
 |---|---|---|---|
-| No context (LLM only) | n/a | 0.50 | 0.57 |
-| Fixed-size (baseline) | 0.37 | 1.60 | 1.87 |
-| Structured chunking | 0.57 | 2.13 | 2.30 |
-| Structured + variant filter | 0.63 | 2.00 | 2.20 |
-| Structured + filter + rerank | 0.63 | 2.07 | 2.27 |
+| No context (LLM only) | n/a | 0.57 | 0.53 |
+| Fixed-size (baseline) | 0.38 | 1.40 | 1.80 |
+| Structured chunking | 0.48 | 2.13 | 2.37 |
+| Structured + variant filter | 0.63 | 2.07 | 2.23 |
+| Structured + filter + rerank | 0.63 | 2.13 | 2.30 |
 
-Best configuration achieves **4.3x improvement** in correctness over the LLM alone.
+Best configuration achieves **3.7x improvement** in correctness over the LLM alone.
