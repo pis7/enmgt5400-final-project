@@ -1,0 +1,61 @@
+digraph pipeline {
+    rankdir=TB;
+    fontname="Helvetica";
+    fontsize=14;
+    node [fontname="Helvetica", fontsize=12, style=filled, margin="0.15,0.08"];
+    edge [fontname="Helvetica", fontsize=10, color="#555555"];
+    bgcolor="white";
+    pad=0.3;
+    nodesep=0.35;
+    ranksep=0.45;
+
+    // --- Artifacts ---
+    node [shape=folder, fillcolor="#fff3cd", color="#d4a017", fontcolor="#6b5300"];
+    build_dir   [label="Build Directory"];
+    corpus      [label="corpus.jsonl"];
+    vectorstore [label="ChromaDB\nvectorstore"];
+    benchmark   [label="benchmark.jsonl"];
+    eval_out    [label="eval_results.json"];
+
+    // --- Executors ---
+    node [shape=box, style="filled,rounded", fontsize=13];
+    corpus_exec [label="CorpusExecutor\n(corpus assembly)", fillcolor="#fdebd0", color="#e67e22"];
+    ingest_exec [label="IngestExecutor\n(chunk + embed)", fillcolor="#fdebd0", color="#e67e22"];
+    query_exec  [label="QueryExecutor\n(retrieve + generate)", fillcolor="#d6eaf8", color="#2980b9"];
+    eval_exec   [label="EvalExecutor\n(score + grade)", fillcolor="#e8daef", color="#8e44ad"];
+
+    // --- External APIs ---
+    node [shape=box, style="filled,rounded", fontsize=11];
+    openai [label="OpenAI\nEmbeddings", fillcolor="#d1ecf1", color="#17a2b8"];
+    claude [label="Claude\nSonnet", fillcolor="#d1ecf1", color="#17a2b8"];
+
+    // --- User input ---
+    user_q [shape=oval, fillcolor="#e9ecef", color="#999999", fontcolor="#333333",
+            label="User\nquestion", fontsize=11];
+
+    // ===== EDGES =====
+
+    // Build path
+    build_dir -> corpus_exec -> corpus -> ingest_exec [color="#e67e22"];
+    ingest_exec -> vectorstore [color="#e67e22"];
+
+    // Query path
+    user_q -> query_exec [color="#2980b9"];
+    vectorstore -> query_exec [label=" top-k", color="#2980b9"];
+
+    // Eval path
+    benchmark -> eval_exec [color="#8e44ad"];
+    eval_exec -> query_exec [label=" delegates", color="#2980b9", penwidth=1.5, style=bold];
+    eval_exec -> eval_out [color="#8e44ad"];
+
+    // API calls (dashed)
+    ingest_exec -> openai [style=dashed, color="#aaaaaa"];
+    query_exec -> openai [style=dashed, color="#aaaaaa"];
+    query_exec -> claude [style=dashed, color="#aaaaaa"];
+    eval_exec -> claude [label=" grade", style=dashed, color="#aaaaaa"];
+
+    // ===== LAYOUT =====
+    { rank=same; build_dir; user_q; benchmark; }
+    { rank=same; corpus; vectorstore; }
+    { rank=same; openai; claude; }
+}

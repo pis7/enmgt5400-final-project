@@ -18,6 +18,3 @@ corpus.jsonl
 
 # Claude
 .claude/
-
-# Local docs
-docs/

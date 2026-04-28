@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASIC RAG Pipeline</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+    background: #f8f9fa;
+    color: #1a1a2e;
+    padding: 40px;
+  }
+  h1 {
+    text-align: center;
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    text-align: center;
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-bottom: 40px;
+  }
+  .pipeline {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  /* Entry point sections */
+  .entry-point {
+    background: white;
+    border-radius: 12px;
+    padding: 28px 32px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
+    border-left: 4px solid #6c757d;
+  }
+  .entry-point.build   { border-left-color: #e67e22; }
+  .entry-point.query   { border-left-color: #2980b9; }
+  .entry-point.eval    { border-left-color: #8e44ad; }
+
+  .entry-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .entry-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 4px 10px;
+    border-radius: 4px;
+    color: white;
+    white-space: nowrap;
+  }
+  .build .entry-badge  { background: #e67e22; }
+  .query .entry-badge  { background: #2980b9; }
+  .eval .entry-badge   { background: #8e44ad; }
+  .entry-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+
+  /* Executor blocks */
+  .executor {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+  }
+  .executor:last-child { margin-bottom: 0; }
+  .executor-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .executor-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    font-family: "JetBrains Mono", "Fira Code", monospace;
+  }
+  .executor-cmd {
+    font-size: 0.75rem;
+    color: #6c757d;
+    font-family: "JetBrains Mono", "Fira Code", monospace;
+    background: #e9ecef;
+    padding: 2px 8px;
+    border-radius: 3px;
+  }
+
+  /* Method list */
+  .methods {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-left: 12px;
+    border-left: 2px solid #dee2e6;
+  }
+  .method {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .method-name {
+    font-family: "JetBrains Mono", "Fira Code", monospace;
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+    min-width: 160px;
+  }
+  .method-desc {
+    font-size: 0.82rem;
+    color: #495057;
+  }
+  .method.optional .method-name::after {
+    content: " (optional)";
+    font-weight: 400;
+    font-style: italic;
+    color: #adb5bd;
+    font-size: 0.75rem;
+  }
+  .method.sub {
+    padding-left: 20px;
+  }
+  .method.sub .method-name { min-width: 140px; }
+
+  /* Arrows between executors */
+  .arrow-down {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 4px 0;
+    color: #adb5bd;
+  }
+  .arrow-down svg {
+    width: 20px;
+    height: 20px;
+  }
+  .arrow-label {
+    font-size: 0.78rem;
+    color: #868e96;
+    font-style: italic;
+  }
+
+  /* Artifact badges */
+  .artifact {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    font-family: "JetBrains Mono", "Fira Code", monospace;
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffc107;
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-top: 8px;
+  }
+  .artifact.input {
+    background: #d1ecf1;
+    color: #0c5460;
+    border-color: #17a2b8;
+  }
+
+  /* Uses-link for eval */
+  .uses-link {
+    font-size: 0.78rem;
+    color: #2980b9;
+    font-style: italic;
+    padding-left: 12px;
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+
+<h1>ASIC Design RAG Pipeline</h1>
+<p class="subtitle">Data flow and entry points for the RAG system</p>
+
+<div class="pipeline">
+
+  <!-- ENTRY POINT 1: Build -->
+  <div class="entry-point build">
+    <div class="entry-header">
+      <span class="entry-badge">Entry Point 1</span>
+      <span class="entry-title">Build a new vectorstore from a design directory</span>
+    </div>
+
+    <div class="executor">
+      <div class="executor-header">
+        <span class="executor-name">CorpusExecutor</span>
+        <span class="executor-cmd">uv run corpus /path/to/build-dir</span>
+      </div>
+      <div class="methods">
+        <div class="method">
+          <span class="method-name">collect_documents</span>
+          <span class="method-desc">Walk build dir, match files via STAGE_RULES, extract text + metadata</span>
+        </div>
+        <div class="method">
+          <span class="method-name">write_corpus</span>
+          <span class="method-desc">Serialize documents to JSONL</span>
+        </div>
+      </div>
+      <div class="artifact">corpus.jsonl &mdash; 475 docs, 25 MB</div>
+    </div>
+
+    <div class="arrow-down">
+      <svg viewBox="0 0 20 20"><path d="M10 3 L10 15 M5 11 L10 16 L15 11" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="arrow-label">feeds into</span>
+    </div>
+
+    <div class="executor">
+      <div class="executor-header">
+        <span class="executor-name">IngestExecutor</span>
+        <span class="executor-cmd">uv run ingest --chunker fixed|structured</span>
+      </div>
+      <div class="methods">
+        <div class="method">
+          <span class="method-name">load_and_chunk</span>
+          <span class="method-desc">Split corpus docs using fixed-size or structure-aware chunker</span>
+        </div>
+        <div class="method">
+          <span class="method-name">init_vectorstore</span>
+          <span class="method-desc">Create ChromaDB collection (deletes existing if present)</span>
+        </div>
+        <div class="method">
+          <span class="method-name">embed_and_store</span>
+          <span class="method-desc">Embed chunks via OpenAI, insert into ChromaDB in batches</span>
+        </div>
+      </div>
+      <div class="artifact">vectorstore/ &mdash; ChromaDB, ~20k chunks</div>
+    </div>
+  </div>
+
+  <!-- ENTRY POINT 2: Query -->
+  <div class="entry-point query">
+    <div class="entry-header">
+      <span class="entry-badge">Entry Point 2</span>
+      <span class="entry-title">Query the existing vectorstore</span>
+    </div>
+
+    <div class="executor">
+      <div class="executor-header">
+        <span class="executor-name">QueryExecutor</span>
+        <span class="executor-cmd">uv run query "your question" [--filter-variant] [--rerank]</span>
+      </div>
+      <div class="artifact input" style="margin-top:0;margin-bottom:12px">vectorstore/ &mdash; must already exist</div>
+      <div class="methods">
+        <div class="method">
+          <span class="method-name">init_clients</span>
+          <span class="method-desc">Connect to OpenAI, Anthropic, and ChromaDB</span>
+        </div>
+        <div class="method">
+          <span class="method-name">ask</span>
+          <span class="method-desc">Full retrieve-and-answer pipeline for one question:</span>
+        </div>
+        <div class="method sub">
+          <span class="method-name">extract_variant</span>
+          <span class="method-desc">Detect design variant name in question text</span>
+        </div>
+        <div class="method sub">
+          <span class="method-name">retrieve</span>
+          <span class="method-desc">Embed question, query ChromaDB for top-k nearest chunks</span>
+        </div>
+        <div class="method sub optional">
+          <span class="method-name">rerank</span>
+          <span class="method-desc">Re-score chunks with Claude, re-sort by relevance</span>
+        </div>
+        <div class="method sub">
+          <span class="method-name">format_context</span>
+          <span class="method-desc">Format chunks into numbered context string with metadata</span>
+        </div>
+        <div class="method sub">
+          <span class="method-name">generate_answer</span>
+          <span class="method-desc">Send question + context to Claude, return cited answer</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ENTRY POINT 3: Eval -->
+  <div class="entry-point eval">
+    <div class="entry-header">
+      <span class="entry-badge">Entry Point 3</span>
+      <span class="entry-title">Evaluate the pipeline against a benchmark</span>
+    </div>
+
+    <div class="executor">
+      <div class="executor-header">
+        <span class="executor-name">EvalExecutor</span>
+        <span class="executor-cmd">uv run eval [-o results.json] [--filter-variant] [--rerank]</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <div class="artifact input" style="margin:0">vectorstore/</div>
+        <div class="artifact input" style="margin:0">benchmark.jsonl &mdash; 30 questions</div>
+      </div>
+      <div class="methods">
+        <div class="method">
+          <span class="method-name">init_clients</span>
+          <span class="method-desc">OpenAI + Anthropic + creates a QueryExecutor instance</span>
+        </div>
+        <div class="method">
+          <span class="method-name">load_benchmark</span>
+          <span class="method-desc">Read benchmark questions with expected answers and source docs</span>
+        </div>
+        <div class="method">
+          <span class="method-name">run_eval</span>
+          <span class="method-desc">For each benchmark question:</span>
+        </div>
+        <div class="method sub">
+          <span class="method-name" style="color:#2980b9">qe.retrieve</span>
+          <span class="method-desc">Retrieve chunks (delegates to QueryExecutor)</span>
+        </div>
+        <div class="method sub optional">
+          <span class="method-name" style="color:#2980b9">qe.rerank</span>
+          <span class="method-desc">Re-rank chunks (delegates to QueryExecutor)</span>
+        </div>
+        <div class="method sub">
+          <span class="method-name">score_retrieval</span>
+          <span class="method-desc">Compute recall vs expected source docs</span>
+        </div>
+        <div class="method sub">
+          <span class="method-name" style="color:#2980b9">qe.generate_answer</span>
+          <span class="method-desc">Generate answer (delegates to QueryExecutor)</span>
+        </div>
+        <div class="method sub">
+          <span class="method-name">grade_answer</span>
+          <span class="method-desc">Claude grades answer vs expected on correctness + completeness</span>
+        </div>
+        <div class="method">
+          <span class="method-name">save_results</span>
+          <span class="method-desc">Write detailed results to JSON</span>
+        </div>
+      </div>
+      <div class="artifact">eval_results.json</div>
+      <div class="uses-link">Blue methods delegate to QueryExecutor (reuses retrieval + generation logic)</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
