@@ -14,6 +14,8 @@ grounded answers with source citations.
 Corpus source: Zeppelin/Blimp superscalar RISC-V processor tapeout targeting
 FreePDK 45nm, with 6 design variants across 11 flow stages.
 
+## [Video Demonstration](https://youtu.be/QqV_60w7AsI)
+
 ## Stack
 
 - **Embedding**: OpenAI `text-embedding-3-small` (512 dimensions)
